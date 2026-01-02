@@ -19,7 +19,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   // 🔑 API KEY 
-  final String apiKey = "AIzaSyA5tywEOFKz64cn-WAUTRDSiGVk3oUY0Pg"; 
+  final String apiKey = "API_KEY_IS_HIDDED"; 
 
   bool _isAnalyzing = false;
 

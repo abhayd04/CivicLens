@@ -10,7 +10,7 @@ class ReportsScreen extends StatelessWidget {
   const ReportsScreen({super.key});
 
   // 👇 API KEY 
-  static const apiKey = "AIzaSyA5tywEOFKz64cn-WAUTRDSiGVk3oUY0Pg"; 
+  static const apiKey = "API_KEY_IS_HIDDED"; 
 
   // ---------------------------------------------------
   // 🧠 AI LOGIC (Standard)

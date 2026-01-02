@@ -16,7 +16,7 @@ void main() async {
   await Firebase.initializeApp(
     options: const FirebaseOptions(
       // API keys and identifiers
-      apiKey: "AIzaSyA5tywEOFKz64cn-WAUTRDSiGVk3oUY0Pg",
+      apiKey: "API_KEY_IS_HIDDED",
   authDomain: "civiclens-hackathon-bdc5b.firebaseapp.com",
   projectId: "civiclens-hackathon-bdc5b",
   storageBucket: "civiclens-hackathon-bdc5b.firebasestorage.app",
@@ -97,7 +97,7 @@ class _HomePageState extends State<HomePage> {
 
   // --- 🔑 CONFIGURATION ---
   //  generic Gemini Key
-  static const apiKey = "AIzaSyA5tywEOFKz64cn-WAUTRDSiGVk3oUY0Pg"; 
+  static const apiKey = "API_KEY_IS_HIDDED"; 
 
   final ImagePicker _picker = ImagePicker();
 
