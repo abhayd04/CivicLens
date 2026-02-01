@@ -11,7 +11,7 @@ class ReportsScreen extends StatelessWidget {
   const ReportsScreen({super.key});
 
   // 👇 API KEY 
-  static const apiKey = "AIzaSyACbiG65v1XkR2RqzlXLghd3I0z3xNF55Y"; 
+  static const apiKey = "API_KEY_IS_HIDDEN_FOR_SECURITY"; 
 
   // ---------------------------------------------------
   // 👍 UPVOTE LOGIC (ADDED)

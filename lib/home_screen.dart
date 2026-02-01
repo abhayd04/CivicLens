@@ -21,7 +21,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   // 🔑 USING THE KEY WE KNOW WORKS
-  final String apiKey = "AIzaSyDk9rarVtm99zX6JqfcSj87qu5_C_mB8BE"; 
+  final String apiKey = "API_KEY_IS_HIDDEN_FOR_SECURITY"; 
 
   bool _isAnalyzing = false;
   Position? _currentPosition; // 📍 To store exact GPS for math

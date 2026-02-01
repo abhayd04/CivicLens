@@ -19,7 +19,7 @@ void main() async {
   await Firebase.initializeApp(
     options: const FirebaseOptions(
       // Your Project Keys
-      apiKey: "AIzaSyACbiG65v1XkR2RqzlXLghd3I0z3xNF55Y",
+      apiKey: "API_KEY_IS_HIDDEN_FOR_SECURITY",
       authDomain: "civiclens-hackathon-bdc5b.firebaseapp.com",
       projectId: "civiclens-hackathon-bdc5b",
       storageBucket: "civiclens-hackathon-bdc5b.firebasestorage.app",
