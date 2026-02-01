@@ -5,15 +5,48 @@ import 'package:google_generative_ai/google_generative_ai.dart';
 import 'dart:typed_data';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:animate_do/animate_do.dart';
+import 'package:url_launcher/url_launcher.dart'; 
 
 class ReportsScreen extends StatelessWidget {
   const ReportsScreen({super.key});
 
   // 👇 API KEY 
-  static const apiKey = "API_KEY_IS_HIDDED"; 
+  static const apiKey = "AIzaSyACbiG65v1XkR2RqzlXLghd3I0z3xNF55Y"; 
 
   // ---------------------------------------------------
-  // 🧠 AI LOGIC (Standard)
+  // 👍 UPVOTE LOGIC (ADDED)
+  // ---------------------------------------------------
+  void _upvoteReport(String docId) {
+    FirebaseFirestore.instance.collection('reports').doc(docId).update({
+      'votes': FieldValue.increment(1),
+    });
+  }
+
+  // ---------------------------------------------------
+  // 📧 EMAIL NOTIFICATION LOGIC
+  // ---------------------------------------------------
+  Future<void> _notifyAuthorities(String issue, String location) async {
+    final String authorityEmail = "mayor@smartcity.gov"; 
+    final String subject = Uri.encodeComponent("URGENT: Civic Hazard Report");
+    final String body = Uri.encodeComponent(
+      "To the Maintenance Dept,\n\n"
+      "A generic hazard has been reported and verified by the CivicLens AI.\n\n"
+      "ISSUE: $issue\n"
+      "LOCATION: $location\n"
+      "STATUS: Verified Pending\n\n"
+      "Please dispatch a team immediately.\n\n"
+      "- Sent via CivicLens Authority Protocol"
+    );
+    final Uri mailUri = Uri.parse("mailto:$authorityEmail?subject=$subject&body=$body");
+    try {
+      await launchUrl(mailUri);
+    } catch (e) {
+      debugPrint("Could not open email: $e");
+    }
+  }
+
+  // ---------------------------------------------------
+  // 🧠 AI LOGIC
   // ---------------------------------------------------
   Future<void> _verifyAndFix(BuildContext context, String docId, String description) async {
     final ImagePicker picker = ImagePicker();
@@ -43,9 +76,9 @@ class ReportsScreen extends StatelessWidget {
       }
 
       final Uint8List imageBytes = await photo.readAsBytes();
+      // ✅ FIX: Switched to 1.5-flash (Standard Stable Model)
       final model = GenerativeModel(model: 'gemini-2.5-flash', apiKey: apiKey);
 
-     // 👇 INTELLIGENT PROMPT
       final content = Content.multi([
         TextPart("You are a strict Maintenance Inspector. The original complaint was: '$description'. Look at this new photo. Does it show that SPECIFIC issue being fixed? 1. If the photo is unrelated (e.g., a wall when the issue was a road), reply 'REJECTED'. 2. If it shows the repair is done and safe, reply 'VERIFIED'. 3. If unclear, reply 'REJECTED'."),
         DataPart('image/jpeg', imageBytes),
@@ -83,7 +116,6 @@ class ReportsScreen extends StatelessWidget {
     }
   }
 
-  // 🕒 Helper for Dates
   String _formatDate(Timestamp? timestamp) {
     if (timestamp == null) return "Just now";
     DateTime date = timestamp.toDate();
@@ -99,7 +131,7 @@ class ReportsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF0F4F8), // High-end Grey
+      backgroundColor: const Color(0xFFF0F4F8), 
       appBar: AppBar(
         title: Text("Safety Command Center", style: GoogleFonts.poppins(fontWeight: FontWeight.w600, color: const Color(0xFF1A237E))),
         backgroundColor: Colors.transparent,
@@ -107,18 +139,39 @@ class ReportsScreen extends StatelessWidget {
         centerTitle: true,
         iconTheme: const IconThemeData(color: Color(0xFF1A237E)),
       ),
-      body: StreamBuilder(
-        stream: FirebaseFirestore.instance.collection('reports').orderBy('timestamp', descending: true).snapshots(),
+      body: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance.collection('reports').snapshots(),
         builder: (context, snapshot) {
           if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
           
-          var docs = snapshot.data!.docs;
+          // 👇 SORTING LOGIC ADDED HERE
+          var docs = snapshot.data!.docs.toList();
+          docs.sort((a, b) {
+            var dataA = a.data() as Map<String, dynamic>;
+            var dataB = b.data() as Map<String, dynamic>;
+            
+            bool isFixedA = dataA['status'] == 'Fixed';
+            bool isFixedB = dataB['status'] == 'Fixed';
+            int votesA = dataA['votes'] ?? 0;
+            int votesB = dataB['votes'] ?? 0;
+
+            // 1. Pending (Not Fixed) comes first
+            if (isFixedA && !isFixedB) return 1; 
+            if (!isFixedA && isFixedB) return -1;
+
+            // 2. Higher votes come first
+            if (votesA != votesB) return votesB.compareTo(votesA);
+
+            // 3. Newer reports come first
+            Timestamp timeA = dataA['timestamp'] ?? Timestamp.now();
+            Timestamp timeB = dataB['timestamp'] ?? Timestamp.now();
+            return timeB.compareTo(timeA);
+          });
           
-          // 📊 CALCULATE LIVE STATS 
+          // 📊 CALCULATE STATS
           int total = docs.length;
-          
           int fixed = docs.where((doc) {
-            final data = doc.data(); // Get the map
+            final data = doc.data() as Map<String, dynamic>;
             return data['status'] == 'Fixed';
           }).length;
           
@@ -127,7 +180,7 @@ class ReportsScreen extends StatelessWidget {
           return ListView(
             padding: const EdgeInsets.all(20),
             children: [
-              // 1. 🏆 THE DASHBOARD CARD
+              // 1. 🏆 DASHBOARD CARD
               FadeInDown(
                 duration: const Duration(milliseconds: 600),
                 child: Container(
@@ -147,13 +200,12 @@ class ReportsScreen extends StatelessWidget {
                       const SizedBox(height: 5),
                       Text("${safetyScore.toInt()}%", style: GoogleFonts.poppins(color: Colors.white, fontSize: 48, fontWeight: FontWeight.bold)),
                       const SizedBox(height: 10),
-                      // Progress Bar
                       ClipRRect(
                         borderRadius: BorderRadius.circular(10),
                         child: LinearProgressIndicator(
                           value: safetyScore / 100,
                           backgroundColor: Colors.white24,
-                          valueColor: const AlwaysStoppedAnimation(Color(0xFF00E676)), // Bright Green
+                          valueColor: const AlwaysStoppedAnimation(Color(0xFF00E676)), 
                           minHeight: 8,
                         ),
                       ),
@@ -180,8 +232,9 @@ class ReportsScreen extends StatelessWidget {
                  Center(child: Padding(padding: const EdgeInsets.all(40), child: Text("No reports yet", style: GoogleFonts.poppins(color: Colors.grey)))),
 
               ...docs.map((doc) {
-                var data = doc.data();
+                var data = doc.data() as Map<String, dynamic>;
                 bool isFixed = data['status'] == 'Fixed';
+                int votes = data['votes'] ?? 0; // Get Votes
                 Color statusColor = isFixed ? Colors.green : const Color(0xFFFF6D00);
 
                 return FadeInUp(
@@ -189,7 +242,7 @@ class ReportsScreen extends StatelessWidget {
                   child: Container(
                     margin: const EdgeInsets.only(bottom: 16),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: isFixed ? Colors.grey[100] : Colors.white, // Dim if fixed
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.08), blurRadius: 20, offset: const Offset(0, 10))],
                     ),
@@ -213,27 +266,72 @@ class ReportsScreen extends StatelessWidget {
                             ],
                           ),
                           const SizedBox(height: 12),
-                          Text(data['description'] ?? "Issue", style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600)),
+                          Text(data['description'] ?? "Issue", style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600, decoration: isFixed ? TextDecoration.lineThrough : null)),
                           const SizedBox(height: 5),
                           Row(children: [
                             Icon(Icons.location_on, size: 14, color: Colors.grey[400]), 
                             const SizedBox(width: 5),
                             Expanded(child: Text(data['location'] ?? "Unknown", style: GoogleFonts.poppins(color: Colors.grey[500], fontSize: 13), maxLines: 1))
                           ]),
+                          
+                          const SizedBox(height: 15),
+
+                          // 👇 NEW UPVOTE ROW
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Row(children: [
+                                Icon(Icons.people_alt, size: 16, color: Colors.blue[800]),
+                                const SizedBox(width: 5),
+                                Text("$votes Students Affected", style: GoogleFonts.poppins(color: Colors.blue[800], fontSize: 12, fontWeight: FontWeight.w600)),
+                              ]),
+                              
+                              if (!isFixed)
+                                InkWell(
+                                  onTap: () => _upvoteReport(doc.id),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(color: Colors.blue[50], borderRadius: BorderRadius.circular(8)),
+                                    child: const Icon(Icons.thumb_up_alt_outlined, size: 20, color: Color(0xFF1A237E)),
+                                  ),
+                                )
+                            ],
+                          ),
+
+                          // 👇 ACTION BUTTONS (Only if not fixed)
                           if (!isFixed) ...[
-                            const SizedBox(height: 20),
-                            SizedBox(
-                              width: double.infinity,
-                              child: OutlinedButton.icon(
-                                onPressed: () => _verifyAndFix(context, doc.id, data['description'] ?? "Issue"),
-                                icon: const Icon(Icons.camera_alt_outlined, size: 18),
-                                label: const Text("VERIFY FIX"),
-                                style: OutlinedButton.styleFrom(
-                                  foregroundColor: const Color(0xFF1A237E),
-                                  side: BorderSide(color: const Color(0xFF1A237E).withOpacity(0.2)),
-                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                            const SizedBox(height: 15),
+                            Row(
+                              children: [
+                                // VERIFY BUTTON
+                                Expanded(
+                                  child: OutlinedButton.icon(
+                                    onPressed: () => _verifyAndFix(context, doc.id, data['description'] ?? "Issue"),
+                                    icon: const Icon(Icons.camera_alt_outlined, size: 18),
+                                    label: const Text("VERIFY FIX"),
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: const Color(0xFF1A237E),
+                                      side: BorderSide(color: const Color(0xFF1A237E).withOpacity(0.2)),
+                                      padding: const EdgeInsets.symmetric(vertical: 12),
+                                    ),
+                                  ),
                                 ),
-                              ),
+                                const SizedBox(width: 10),
+                                // NOTIFY BUTTON
+                                Expanded(
+                                  child: ElevatedButton.icon(
+                                    onPressed: () => _notifyAuthorities(data['description'] ?? "Issue", data['location'] ?? "Unknown"),
+                                    icon: const Icon(Icons.mail_outline, size: 18),
+                                    label: const Text("NOTIFY"),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.redAccent,
+                                      foregroundColor: Colors.white,
+                                      elevation: 0,
+                                      padding: const EdgeInsets.symmetric(vertical: 12),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ]
                         ],
