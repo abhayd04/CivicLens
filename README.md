@@ -1,5 +1,5 @@
 # CivicLens - Smart City Maintenance 🚧
-**Team Hackaholics | HackVento 2k26**
+**Team Hackaholics**
 
 ## 🎥 Project Demo
 [Watch the Video Demo Here](https://drive.google.com/file/d/17LVPqpVVIcO0optGW4Bt9zEQFSz4Fjrq/view?usp=drivesdk)
